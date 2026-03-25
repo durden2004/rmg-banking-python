@@ -1,17 +1,26 @@
 from fastapi import FastAPI
-from .database import engine
-from . import models
-from .routers import user, account, loan, transaction
+from fastapi.staticfiles import StaticFiles
 
-models.Base.metadata.create_all(bind=engine)
+from app.middleware import VoiceMiddleware
+
+from app.routers import users, accounts, transactions
+
 
 app = FastAPI()
 
-app.include_router(user.router)
-app.include_router(account.router)
-app.include_router(loan.router)
-app.include_router(transaction.router)
+# enable voice middleware
+app.add_middleware(VoiceMiddleware)
+
+# serve audio files
+app.mount("/audio", StaticFiles(directory="audio"), name="audio")
+
 
 @app.get("/")
-def home():
-    return {"message": "RMG Banking API running"}
+def root():
+    return {"message": "API working"}
+
+
+# include routers
+app.include_router(users.router)
+app.include_router(accounts.router)
+app.include_router(transactions.router)
