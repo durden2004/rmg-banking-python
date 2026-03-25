@@ -1,23 +1,19 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ..database import SessionLocal
-from .. import crud, schemas
-from ..auth import create_access_token
+
+from app.database import get_db
+from app import schemas, crud
+from app.auth import create_access_token, authenticate_user
 
 router = APIRouter()
 
-def get_db():
 
-    db = SessionLocal()
-
-    try:
-        yield db
-
-    finally:
-        db.close()
-
+# -------------------
+# CREATE USER
+# -------------------
 
 @router.post("/users")
+
 def create_user(
     user: schemas.UserCreate,
     db: Session = Depends(get_db)
@@ -26,27 +22,40 @@ def create_user(
     return crud.create_user(db, user)
 
 
+# -------------------
+# LOGIN
+# -------------------
+
 @router.post("/login")
+
 def login(
-    login: schemas.Login,
+    user: schemas.Login,
     db: Session = Depends(get_db)
 ):
 
-    user = crud.authenticate_user(
+    db_user = authenticate_user(
         db,
-        login.email,
-        login.password
+        user.email,
+        user.password
     )
 
-    if not user:
+    if not db_user:
 
-        return {"error": "invalid credentials"}
+        raise HTTPException(
+            status_code=401,
+            detail="invalid credentials"
+        )
 
     token = create_access_token(
-        {"sub": user.email}
+
+        {"sub": db_user.email}
+
     )
 
     return {
+
         "access_token": token,
+
         "token_type": "bearer"
+
     }
