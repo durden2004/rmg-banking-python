@@ -2,17 +2,25 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.auth import get_current_user
 from app import crud
 
-router = APIRouter(prefix="/account", tags=["Account"])
+router = APIRouter()
 
 
-@router.post("/")
-def create_account(user_id: int, db: Session = Depends(get_db)):
+@router.post("/account")
 
-    account = crud.create_account(db, user_id)
+def create_account(
 
-    return {
-        "message": "Account created",
-        "account_id": account.id
-    }
+    user_id: int,
+
+    db: Session = Depends(get_db),
+
+    user = Depends(get_current_user)
+
+):
+
+    return crud.create_account(
+        db,
+        user_id
+    )
